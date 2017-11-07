@@ -17,6 +17,7 @@ Use the *resolve macro as*-Feature of *Cursive* to get the same tooling as funct
 
 *sayang* is available from Clojars. Add the following dependency to your *project.clj*:
 
+![](https://clojars.org/me.lomin/sayang/latest-version.svg)
 ## Usage
 
 ```clojure
