@@ -21,7 +21,7 @@
 (defn args->spec
   ([args] (args->spec args gen-key))
   ([args gen-key-fn]
-   (cons 's/cat
+   (cons 'clojure.spec.alpha/cat
          (let [args* (get-in args [:args :args])]
            (reduce (fn [key-pred-forms [k sym]]
                      (into key-pred-forms
@@ -40,7 +40,7 @@
    (if (= k :arity-n)
      (if-let [args (:bodies bodies-or-args)]
        (arity->spec [k args] gen-key-fn)
-       (cons 's/or
+       (cons 'clojure.spec.alpha/or
              (mapcat (fn [x] [(keyword (str (count-args x)))
                               (args->spec x gen-key-fn)])
                      bodies-or-args)))
@@ -68,11 +68,11 @@
 
 (defn workaround-for-CLJ-2021 [defn-args]
   (specter/transform (make-any-walker #(and
-                                        (vector? %)
-                                        (= (count %) 3)
-                                        (let [[k sep t] %]
-                                          (and (simple-symbol? k)
-                                               (= :- sep)
-                                               (s/valid? ::type t)))))
+                                         (vector? %)
+                                         (= (count %) 3)
+                                         (let [[k sep t] %]
+                                           (and (simple-symbol? k)
+                                                (= :- sep)
+                                                (s/valid? ::type t)))))
                      (fn [[k]] k)
                      defn-args))
