@@ -1,4 +1,4 @@
-(defproject me.lomin/sayang "0.1.0"
+(defproject me.lomin/sayang "0.1.1"
   :description "Complects the definition of a function with its specification."
   :url "https://github.com/lomin/sayang"
   :license {:name "Eclipse Public License"

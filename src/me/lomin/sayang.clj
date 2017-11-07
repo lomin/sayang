@@ -10,7 +10,7 @@
                       (fn [x] (if x x (sayang/arity->spec (:bs defn-args-spec)))))
         ;defn-args* (s/unform ::specs/defn-args (remove-type-defs defn-args-spec))
         defn-args* (sayang/workaround-for-CLJ-2021 defn-args)
-        register-fdef (cons 's/fdef (cons sym (mapcat seq specs)))]
+        register-fdef (cons 'clojure.spec.alpha/fdef (cons sym (mapcat seq specs)))]
     (list 'do
           (cons 'defn defn-args*)
           register-fdef)))
