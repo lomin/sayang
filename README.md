@@ -57,7 +57,7 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
 * [reference other specs](#reference-other-specs)
 * [data DSL for homogeneous collections](#data-dsl-for-homogeneous-collections)
 * [data DSL for tuples](#data-dsl-for-tuples)
-* [global switch to toggle specification](#global-switch-to-toggle-specification)
+* [global switch to toggle specification](#leiningen)
 
 
 ### Specification at definition
