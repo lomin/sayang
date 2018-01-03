@@ -2,12 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
             [clojure.core.specs.alpha :as specs]
-            [me.lomin.sayang.core :refer :all :as sayang-core]
-            [me.lomin.sayang :refer [sdefn] :as sayang]
-            [orchestra.spec.test :as spec-test-all])
-  (:import (clojure.lang ExceptionInfo)))
-
-(s/check-asserts true)
+            [me.lomin.sayang.core :refer :all :as sayang-core]))
 
 (deftest complex-fn-test
   (is (= '{:bs   [:arity-1
@@ -161,87 +156,3 @@
                                                            (str x y))
                                                           ([[x :- number?]]
                                                            (str x)))))))
-
-(sdefn getting-started {:ret string?}
-       [f
-        [x :- int?]]
-       (f x))
-
-(deftest getting-started-test
-  (is (= "5" (getting-started str 5)))
-  (is (= :exception (try (getting-started str "5")
-                         (catch ExceptionInfo _ :exception))))
-  (is (= :exception (try (getting-started identity 5)
-                         (catch ExceptionInfo _ :exception)))))
-
-(sdefn make-magic-string {:ret string?}
-       ([[x :- int?]]
-        (str x "?"))
-       ([[x :- string?] [y :- string?]]
-        (str x "?" y)))
-
-(deftest multi-arity-test
-  (is (= "2?" (make-magic-string 2)))
-  (is (= "2?!" (make-magic-string "2" "!")))
-  (is (= :exception (try (make-magic-string 2 "!")
-                         (catch ExceptionInfo _ :exception)))))
-
-(s/def ::number? number?)
-(sdefn speced-return [[x :- ::number?]]
-       x)
-
-(deftest reference-to-speced-keywords-test
-  (is (= 2 (speced-return 2)))
-  (is (= :exception (try (speced-return "2")
-                         (catch ExceptionInfo _ :exception)))))
-
-(sdefn call-with-7 [[f :- (sayang/of make-magic-string)]]
-       (f 7))
-
-(deftest of-test
-  (is (= "7?" (call-with-7 make-magic-string)))
-  (is (= :exception (try (call-with-7 identity)
-                         (catch ExceptionInfo _ :exception)))))
-
-(defn result-larger-than-min-arg-value? [spec]
-  (< (apply min (vals (:0 (:args spec))))
-     (:ret spec)))
-
-(sdefn add-map-values {:ret int?
-                       :fn  result-larger-than-min-arg-value?}
-       [[{:keys [a b c]} :- map?]]
-       (+ a b c))
-
-(deftest add-map-values-test
-  (is (= -1 (add-map-values {:a 1 :b 0 :c -2})))
-  (is (= :exception (try (add-map-values {:a -1 :b -2 :c -3})
-                         (catch ExceptionInfo _ :exception)))))
-
-(sdefn speced-add {:ret int?}
-       [[xs :- [int?]]]
-       (apply + xs))
-
-(deftest every-spec-data-dsl-test
-  (is (= 105 (speced-add (range 15))))
-  (is (= :exception (try (speced-add (cons 1.0 (range 15)))
-                         (catch ExceptionInfo _ :exception)))))
-
-(sdefn sum-of-4-tuple {:ret float?}
-       [[tuple :- [int? float? int? float?]]]
-       (apply + tuple))
-
-(deftest tuple-spec-data-dsl-test
-  (is (= 10.0 (sum-of-4-tuple [1 2.0 3 4.0])))
-  (is (= :exception (try (sum-of-4-tuple [1 2 3 4])
-                         (catch ExceptionInfo _ :exception)))))
-
-(sdefn speced-return-2 {:args (s/cat :x int?)}
-       [x]
-       x)
-
-(deftest only-map-specs-test
-  (is (= 100 (speced-return-2 100)))
-  (is (= :exception (try (speced-return-2 "100")
-                         (catch ExceptionInfo _ :exception)))))
-
-(spec-test-all/instrument)

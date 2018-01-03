@@ -2,7 +2,7 @@
 
 ### Added
 
-* support for destructuring, function calls and registered specs in arg spec definitions
+* Support for destructuring, function calls and registered specs in arg spec definitions
 * Data-DSLs for spec/every and spec/tuple in arg spec definitions
 * sayang/of: syntactic sugar for referring to the spec of other functions
 * Switch to (de)activate registering spec/fdef
