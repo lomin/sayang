@@ -1,16 +1,25 @@
 (ns me.lomin.sayang
   (:require [clojure.spec.alpha :as s]
-            [clojure.core.specs.alpha :as specs]
-            [me.lomin.sayang.core :as sayang]))
+            [me.lomin.sayang.core :as sayang]
+            [clojure.string :as string]))
 
-(defmacro sdefn [& [sym :as defn-args]]
-  (let [defn-args-spec (s/conform ::specs/defn-args defn-args)
-        specs (update (select-keys (:meta defn-args-spec) [:args :ret :fn])
-                      :args
-                      (fn [x] (if x x (sayang/arity->spec (:bs defn-args-spec)))))
-        ;defn-args* (s/unform ::specs/defn-args (remove-type-defs defn-args-spec))
-        defn-args* (sayang/workaround-for-CLJ-2021 defn-args)
-        register-fdef (cons 'clojure.spec.alpha/fdef (cons sym (mapcat seq specs)))]
-    (list 'do
-          (cons 'defn defn-args*)
-          register-fdef)))
+(defonce
+  ^{:dynamic true
+    :doc     "If true, register a function spec for every function defined with sdefn."}
+  *activate*
+  (boolean
+   (if-let [prop (System/getProperty "me.lomin.sayang.activate")]
+     (and (not (string/blank? prop))
+          (not= "false" prop)))))
+
+(defmacro of [f]
+  (s/get-spec (ns-resolve *ns* &env f)))
+
+(defmacro sdefn [& defn-args]
+  (if *activate*
+    (do
+      (s/assert :clojure.core.specs.alpha/defn-args defn-args)
+      (list 'do
+            (sayang/make-defn-form defn-args)
+            (sayang/make-fdef-form defn-args)))
+    (sayang/make-defn-form defn-args)))
