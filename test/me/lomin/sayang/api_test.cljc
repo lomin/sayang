@@ -1,14 +1,14 @@
 ;Specification at definition
 (ns me.lomin.sayang.api-test
-  (:require [clojure.test :refer :all]
+  (:require #?(:cljs [cljs.test :refer-macros [deftest is testing]]
+               :clj [clojure.test :refer [deftest is testing]])
             [clojure.spec.alpha :as s]
             [me.lomin.sayang :as sg]
-            [orchestra.spec.test :as orchestra])
-  (:import (clojure.lang ExceptionInfo)))
+            #?(:clj [orchestra.spec.test :as orchestra]
+               :cljs [orchestra-cljs.spec.test :as orchestra])))
 
-(declare thrown?)
+
 (s/check-asserts true)
-(alter-var-root #'sg/*activate* (constantly true))
 
 (sg/sdefn basic-usage {:ret    string?
                        :fn #(<= (:x (:args %))
@@ -20,10 +20,13 @@
   (is (= "1" (basic-usage 1)))
 
   (testing "Fails :fn spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (basic-usage 2))))
+
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (basic-usage "5")))))
 
 (orchestra/instrument `basic-usage)
@@ -36,7 +39,8 @@
   (is (= 100 (int-identity 100)))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (int-identity "100")))))
 
 (orchestra/instrument `int-identity)
@@ -52,10 +56,12 @@
   (is (= "5" (partial-specs str 5)))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (partial-specs str "5"))))
   (testing "Fails :ret spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (partial-specs identity 5)))))
 
 (orchestra/instrument `partial-specs)
@@ -70,7 +76,8 @@
   (is (= 5 (sum-first-two-elements [2 3 4])))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (sum-first-two-elements [2 3])))))
 
 (orchestra/instrument `sum-first-two-elements)
@@ -88,7 +95,8 @@
   (is (= "2?!" (make-magic-string "2" "!")))
 
   (testing "Fails :args spec for arity-2"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (make-magic-string 2 "!")))))
 
 (orchestra/instrument `make-magic-string)
@@ -106,7 +114,8 @@
   (is (= -1 (add-map-values {:a 1 :b 0 :c -2})))
 
   (testing "Fails :fn spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (add-map-values {:a -1 :b -2 :c -3})))))
 
 (orchestra/instrument `add-map-values)
@@ -121,22 +130,26 @@
   (is (= 2 (number-identity 2)))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (number-identity "2")))))
 
 (orchestra/instrument `number-identity)
 
-(sg/sdefn call-with-7 [[f :- (sg/of make-magic-string)]]
-          (f 7))
+(comment
+  (sg/sdefn call-with-7 [[f :- (sg/of make-magic-string)]]
+    (f 7))
 
-(deftest of-test
-  (is (= "7?" (call-with-7 make-magic-string)))
+  (deftest of-test
 
-  (testing "'identity' does not fulfill fdef of 'make-magic-string'"
-    (is (thrown? ExceptionInfo
-                 (call-with-7 identity)))))
+    (is (= "7?" (call-with-7 make-magic-string)))
 
-(orchestra/instrument `call-with-7)
+    (testing "'identity' does not fulfill fdef of 'make-magic-string'"
+      (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                      :cljs :default)
+                   (call-with-7 identity)))))
+
+  (orchestra/instrument `call-with-7))
 
 ; Data DSL for homogeneous collections
 
@@ -148,7 +161,8 @@
   (is (= 105 (speced-add (range 15))))
 
   (testing "1.0 is no integer, therefore xs is no homogeneous collection any more"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (speced-add (cons 1.0 (range 15)))))))
 
 (orchestra/instrument `speced-add)
@@ -156,14 +170,15 @@
 ;Data DSL for tuples
 
 (sg/sdefn sum-of-4-tuple {:ret float?}
-          [[tuple :- [int? float? int? float?]]]
-          (apply + tuple))
+  [[tuple :- [int? float? int? float?]]]
+  (apply + tuple))
 
 (deftest tuple-spec-data-dsl-test
   (is (= 10.0 (sum-of-4-tuple [1 2.0 3 4.0])))
 
   (testing "Fails tuple spec of :args"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (sum-of-4-tuple [1 2 3 4])))))
 
 (orchestra/instrument `sum-of-4-tuple)

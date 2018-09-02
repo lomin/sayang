@@ -1,33 +1,16 @@
 (ns me.lomin.sayang.core
   (:require [clojure.spec.alpha :as s]
-            [clojure.core.specs.alpha :as specs]
+            [me.lomin.sayang.specs :as sayang-specs]
             [com.rpl.specter :as specter]))
-
-(s/def ::type (s/or ::spec (s/fspec :args (s/cat :arg any?)
-                                    :ret any?)
-                    ::fn-call list?
-                    ::vector-of-1 #(and (vector? %)
-                                        (= 1 (count %)))
-                    ::vector vector?))
-
-(s/def ::type-def-form (s/cat :sym any?
-                              ::sep #(= % :-)
-                              ::type ::type))
-
-(s/def ::specs/binding-form
-  (s/or :sym ::specs/local-name
-        :seq ::specs/seq-binding-form
-        :map ::specs/map-binding-form
-        ::type-def ::type-def-form))
 
 (defn vector->tuple-spec [args]
   (cons 'clojure.spec.alpha/tuple args))
 
 (defn get-type [type-def]
-  (let [[k v] (::type type-def)]
+  (let [[k v] (::sayang-specs/type type-def)]
     (condp = k
-      ::vector-of-1 (list 'clojure.spec.alpha/every (first v))
-      ::vector (vector->tuple-spec v)
+      ::sayang-specs/vector-of-1 (list 'clojure.spec.alpha/every (first v))
+      ::sayang-specs/vector (vector->tuple-spec v)
       v)))
 
 (defn args->spec [args]
@@ -35,7 +18,7 @@
         (let [args* (get-in args [:args :args])]
           (reduce (fn [key-pred-forms [idx [k sym-or-typ-def]]]
                     (into key-pred-forms
-                          (if (= k ::type-def)
+                          (if (= k ::sayang-specs/type-def)
                             (list (get-type sym-or-typ-def) (or (keyword (:sym sym-or-typ-def)) (keyword (str idx))))
                             (list 'any? (or (keyword sym-or-typ-def) (keyword (str idx)))))))
                   '()
@@ -71,7 +54,7 @@
 (comment
   (defn remove-type-defs [m]
     (specter/transform m
-                       (make-any-walker [specter/FIRST (specter/pred= ::type-def)])
+                       (make-any-walker [specter/FIRST (specter/pred= ::sayang-specs/type-def)])
                        (fn [[_ {sym :sym}]] sym))))
 
 (defn remove-type-defs-with-workaround-for-CLJ-2021 [defn-args]
@@ -89,7 +72,7 @@
           (fn [x] (if x x (arity->spec (:bs defn-args-conformed))))))
 
 (defn make-fdef-form [[sym :as defn-args]]
-  (let [defn-args-conformed (s/conform :clojure.core.specs.alpha/defn-args defn-args)
+  (let [defn-args-conformed (s/conform ::sayang-specs/defn-args defn-args)
         specs (merge-specs defn-args-conformed)]
     (cons 'clojure.spec.alpha/fdef (cons sym (mapcat seq specs)))))
 

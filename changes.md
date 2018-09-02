@@ -1,3 +1,11 @@
+## [Unreleased]
+
+## 0.3.0
+
+### Added
+
+* Support for ClojureScript
+
 ## 0.2.0
 
 ### Added
