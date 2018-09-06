@@ -1,6 +1,6 @@
 # sayang
 
-*sayang* complects the definition of a function with its specification.
+*sayang* complects the definition of a Clojure(Script) function with its specification.
 
 ## Rationale
 
@@ -20,15 +20,22 @@ Use the *resolve macro as*-Feature of *Cursive* to get the same tooling as funct
 
 ### Alternatives
 
-If you do not like the syntax or any other design decisions of *sayang*, you might want to have a look at the `defn-spec` macro of [Orchestra](https://github.com/jeaye/orchestra).
+If you do not like the syntax or any other design decisions of *sayang*, you might want to have a look at:
 
-## Leiningen
+* the `defn-spec` macro of [Orchestra](https://github.com/jeaye/orchestra)
+* [Ghostwheel](https://github.com/gnl/ghostwheel)
+* [Speck](https://github.com/j-cr/speck)
+* [defn-spec](https://github.com/Provisdom/defn-spec)
 
-*sayang* is available from Clojars. Add the following dependency to your *project.clj*:
+## Getting Started
+
+*sayang* is available from Clojars. Add the following dependency to your *deps.edn* or *project.clj*:
 
 [![Current Version](https://clojars.org/me.lomin/sayang/latest-version.svg)](https://clojars.org/me.lomin/sayang)
 
-Generation of specifications is turned off by default. One option to activate it is by adding jvm-opts in Leiningen:
+Generation of specifications is turned off by default. To activate it add jvm-opts for Clojure and JVM-based ClojureScript REPLs.
+
+Leiningen:
 
 ```clojure
 (defproject sayang-test "0.1.0-SNAPSHOT"
@@ -36,14 +43,18 @@ Generation of specifications is turned off by default. One option to activate it
                  [orchestra  "2017.11.12-1"]
                  [org.clojure/test.check  "0.9.0"]
                  [org.clojure/spec.alpha "0.1.143"]
-                 [me.lomin/sayang "0.2.0"]]
-  :profiles {:dev {:jvm-opts ["-Dme.lomin.sayang.activate=true"]}})
+                 [me.lomin/sayang "0.3.0"]]
+  :profiles {:dev {:jvm-opts ["-Dme.lomin.sayang.*activate*=true"]}})
 ```
 
-Alternatively, you can switch the activation toggle manually in your code:
+Figwheel-REPL in Cursive:
+
+<img src="/images/Readme/figwheel-repl.png?raw=true">
+
+Additionally, activate the toggle manually in your code:
 
 ```clojure
-(alter-var-root #'me.lomin.sayang/*activate*  (constantly true))
+(me.lomin.sayang/activate!)
 ```
 
 Once activated, you need a runtime dependency to org.clojure/test.check.
@@ -59,19 +70,16 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
 * [data DSL for tuples](#data-dsl-for-tuples)
 * [global switch to toggle specification](#leiningen)
 
-
 ### Specification at definition
 ```clojure
 (ns me.lomin.sayang.api-test
-  (:require [clojure.test :refer :all]
-            [clojure.spec.alpha :as s]
+  (:require [clojure.test :refer [deftest is testing]]
+            [clojure.spec.alpha :as spec]
             [me.lomin.sayang :as sg]
-            [orchestra.spec.test :as orchestra])
-  (:import (clojure.lang ExceptionInfo)))
+            #?(:clj [orchestra.spec.test :as orchestra]
+               :cljs [orchestra-cljs.spec.test :as orchestra])))
 
-(declare thrown?)
-(s/check-asserts true)
-(alter-var-root #'sg/*activate* (constantly true))
+(sg/activate!)
 
 (sg/sdefn basic-usage {:ret    string?
                        :fn #(<= (:x (:args %))
@@ -83,23 +91,27 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
   (is (= "1" (basic-usage 1)))
 
   (testing "Fails :fn spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (basic-usage 2))))
+
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (basic-usage "5")))))
 
 (orchestra/instrument `basic-usage)
 
-(sg/sdefn int-identity {:args (s/cat :x int?)}
-  [x]
-  x)
+(sg/sdefn int-identity {:args (spec/cat :x int?)}
+          [x]
+          x)
 
 (deftest specs-from-meta-map-test
   (is (= 100 (int-identity 100)))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (int-identity "100")))))
 
 (orchestra/instrument `int-identity)
@@ -115,10 +127,12 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
   (is (= "5" (partial-specs str 5)))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (partial-specs str "5"))))
   (testing "Fails :ret spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (partial-specs identity 5)))))
 
 (orchestra/instrument `partial-specs)
@@ -126,14 +140,15 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
 ### Support for destructuring
 ```clojure
 (sg/sdefn sum-first-two-elements
-  [[[a b] :- (s/tuple int? int? int?)]]
-  (+ a b))
+          [[[a b] :- (spec/tuple int? int? int?)]]
+          (+ a b))
 
 (deftest support-for-destructuring-test
   (is (= 5 (sum-first-two-elements [2 3 4])))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (sum-first-two-elements [2 3])))))
 
 (orchestra/instrument `sum-first-two-elements)
@@ -151,7 +166,8 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
   (is (= "2?!" (make-magic-string "2" "!")))
 
   (testing "Fails :args spec for arity-2"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (make-magic-string 2 "!")))))
 
 (orchestra/instrument `make-magic-string)
@@ -162,21 +178,22 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
 
 (sg/sdefn add-map-values {:ret    int?
                           :fn result-larger-than-min-arg-value?}
-  [[{:keys [a b c]} :- map?]]
-  (+ a b c))
+          [[{:keys [a b c]} :- map?]]
+          (+ a b c))
 
 (deftest fn-spec-for-multi-arity-test
   (is (= -1 (add-map-values {:a 1 :b 0 :c -2})))
 
   (testing "Fails :fn spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (add-map-values {:a -1 :b -2 :c -3})))))
 
 (orchestra/instrument `add-map-values)
 ```
 ### Reference other specs
 ```clojure
-(s/def ::number? number?)
+(spec/def ::number? number?)
 (sg/sdefn number-identity [[x :- ::number?]]
           x)
 
@@ -184,57 +201,62 @@ Once activated, you need a runtime dependency to org.clojure/test.check.
   (is (= 2 (number-identity 2)))
 
   (testing "Fails :args spec"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (number-identity "2")))))
 
 (orchestra/instrument `number-identity)
 
 (sg/sdefn call-with-7 [[f :- (sg/of make-magic-string)]]
-          (f 7))
+  (f 7))
 
 (deftest of-test
+
   (is (= "7?" (call-with-7 make-magic-string)))
 
   (testing "'identity' does not fulfill fdef of 'make-magic-string'"
-    (is (thrown? ExceptionInfo
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
                  (call-with-7 identity)))))
 
 (orchestra/instrument `call-with-7)
 ```
 ### Data DSL for homogeneous collections
 ```clojure
-(sg/sdefn speced-add {:ret int?}
-          [[xs :- [int?]]]
+(sg/sdefn speced-add {:ret number?}
+          [[xs :- [number?]]]
           (apply + xs))
 
 (deftest every-spec-data-dsl-test
   (is (= 105 (speced-add (range 15))))
 
-  (testing "1.0 is no integer, therefore xs is no homogeneous collection any more"
-    (is (thrown? ExceptionInfo
-                 (speced-add (cons 1.0 (range 15)))))))
+  (testing "a string is not a number, therefore xs is no homogeneous collection any more"
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
+                 (speced-add (cons "1" (range 15)))))))
 
 (orchestra/instrument `speced-add)
 ```
 ### Data DSL for tuples
 ```clojure
-(sg/sdefn sum-of-4-tuple {:ret float?}
-          [[tuple :- [int? float? int? float?]]]
-          (apply + tuple))
+(sg/sdefn sum-of-pos-pos-neg-tuple {:ret number?}
+  [[tuple :- [pos? pos? neg?]]]
+  (apply + tuple))
 
 (deftest tuple-spec-data-dsl-test
-  (is (= 10.0 (sum-of-4-tuple [1 2.0 3 4.0])))
+  (is (= 0 (sum-of-pos-pos-neg-tuple [1 2 -3])))
 
   (testing "Fails tuple spec of :args"
-    (is (thrown? ExceptionInfo
-                 (sum-of-4-tuple [1 2 3 4])))))
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
+                 (sum-of-pos-pos-neg-tuple [1 2 3])))))
 
-(orchestra/instrument `sum-of-4-tuple)
+(orchestra/instrument `sum-of-pos-pos-neg-tuple)
 ```
 
-## Limitations
+## Acknowledgments
 
-* Does not work for ClojureScript, yet.
+Thanks to [Jeaye Wilkerson](https://github.com/jeaye) for figuring out how to get around [CLJ-1750](https://dev.clojure.org/jira/browse/CLJ-1750).
 
 ## About
 
@@ -242,7 +264,7 @@ Sayang (사양) means specification in Korean.
 
 ## License
 
-Copyright © 2017 Steven Collins
+Copyright © 2018 Steven Collins
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

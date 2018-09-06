@@ -3,18 +3,40 @@
             [me.lomin.sayang.specs :as sayang-specs]
             [com.rpl.specter :as specter]))
 
+(def ^:dynamic *cljs?* false)
+
+(defn spec-fn [fn-name]
+  ; Thx to https://github.com/jeaye
+  (if *cljs?*
+    (case fn-name
+      ::spec 'cljs.spec.alpha/spec
+      ::cat 'cljs.spec.alpha/cat
+      ::or 'cljs.spec.alpha/or
+      ::fdef 'cljs.spec.alpha/fdef
+      ::get-spec 'cljs.spec.alpha/get-spec
+      ::tuple 'cljs.spec.alpha/tuple
+      ::every 'cljs.spec.alpha/every)
+    (case fn-name
+      ::spec 'clojure.spec.alpha/spec
+      ::cat 'clojure.spec.alpha/cat
+      ::or 'clojure.spec.alpha/or
+      ::fdef 'clojure.spec.alpha/fdef
+      ::get-spec 'clojure.spec.alpha/get-spec
+      ::tuple 'clojure.spec.alpha/tuple
+      ::every 'clojure.spec.alpha/every)))
+
 (defn vector->tuple-spec [args]
-  (cons 'clojure.spec.alpha/tuple args))
+  (cons (spec-fn ::tuple) args))
 
 (defn get-type [type-def]
   (let [[k v] (::sayang-specs/type type-def)]
     (condp = k
-      ::sayang-specs/vector-of-1 (list 'clojure.spec.alpha/every (first v))
+      ::sayang-specs/vector-of-1 (list (spec-fn ::every) (first v))
       ::sayang-specs/vector (vector->tuple-spec v)
       v)))
 
 (defn args->spec [args]
-  (cons 'clojure.spec.alpha/cat
+  (cons (spec-fn ::cat)
         (let [args* (get-in args [:args :args])]
           (reduce (fn [key-pred-forms [idx [k sym-or-typ-def]]]
                     (into key-pred-forms
@@ -31,7 +53,7 @@
   (if (= k :arity-n)
     (if-let [args (:bodies bodies-or-args)]
       (arity->spec [k args])
-      (cons 'clojure.spec.alpha/or
+      (cons (spec-fn ::or)
             (mapcat (fn [x] [(keyword (str (count-args x)))
                              (args->spec x)])
                     bodies-or-args)))
@@ -74,7 +96,7 @@
 (defn make-fdef-form [[sym :as defn-args]]
   (let [defn-args-conformed (s/conform ::sayang-specs/defn-args defn-args)
         specs (merge-specs defn-args-conformed)]
-    (cons 'clojure.spec.alpha/fdef (cons sym (mapcat seq specs)))))
+    (cons (spec-fn ::fdef) (cons sym (mapcat seq specs)))))
 
 (defn make-defn-form [defn-args]
   (cons 'defn

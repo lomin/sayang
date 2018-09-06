@@ -1,10 +1,12 @@
-## [Unreleased]
-
 ## 0.3.0
 
 ### Added
 
 * Support for ClojureScript
+
+### Changed
+
+* Dependency  [com.rpl/specter "1.1.0"] -> [com.rpl/specter "1.1.1"]
 
 ## 0.2.0
 

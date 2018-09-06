@@ -4,26 +4,45 @@
             [clojure.string :as string])
   #?(:cljs (:require-macros me.lomin.sayang)))
 
-#?(:cljs (goog-define activate false))
+#?(:clj (defonce
+          ^{:dynamic true
+            :doc     "If true, register a function spec for every function defined with sdefn."}
+          *activate*
+          (System/getProperty "me.lomin.sayang.*activate*")))
 
-(defonce
-  ^{:dynamic true
-    :doc     "If true, register a function spec for every function defined with sdefn."}
-  *activate*
-  (boolean
-    (if-let [prop #?(:cljs activate
-                     :clj  (System/getProperty "me.lomin.sayang.activate"))]
-      (and (not (string/blank? prop))
-           (not= "false" prop)))))
+(defn toggle [b]
+  #?(:clj  (alter-var-root #'*activate* (constantly b))
+     :cljs (if b (goog-define *activate* true) (goog-define *activate* false))))
 
-(defmacro of [f]
-  (s/get-spec (ns-resolve *ns* &env f)))
+(defn activate! []
+  (toggle true))
+
+(defmacro deactivate! []
+  (binding [sayang/*cljs?* (-> &env :ns some?)]
+    (list 'do
+          (list 'me.lomin.sayang/toggle false)
+          (if sayang/*cljs?*
+            (list 'cljs.spec.test.alpha/unstrument)
+            (list 'clojure.spec.test.alpha/unstrument)))))
+
+(defn activated? []
+  (and *activate*
+       (or (boolean? *activate*)
+           (and (not (string/blank? *activate*))
+                (not= "false" *activate*)))))
 
 (defmacro sdefn [& defn-args]
-  (if *activate*
-    (do
-      (s/assert :me.lomin.sayang.specs/defn-args defn-args)
-      (list 'do
-            (sayang/make-defn-form defn-args)
-            (sayang/make-fdef-form defn-args)))
-    (sayang/make-defn-form defn-args)))
+  (binding [sayang/*cljs?* (-> &env :ns some?)]
+    (if (activated?)
+      (do
+        (s/assert :me.lomin.sayang.specs/defn-args defn-args)
+        (list 'do
+              (sayang/make-defn-form defn-args)
+              (list 'when (list 'me.lomin.sayang/activated?)
+                    (sayang/make-fdef-form defn-args))))
+      (sayang/make-defn-form defn-args))))
+
+
+(defmacro of [f]
+  (binding [sayang/*cljs?* (-> &env :ns some?)]
+    (list (sayang/spec-fn ::sayang/get-spec) (list 'var f))))

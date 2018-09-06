@@ -1,14 +1,12 @@
 ;Specification at definition
 (ns me.lomin.sayang.api-test
-  (:require #?(:cljs [cljs.test :refer-macros [deftest is testing]]
-               :clj [clojure.test :refer [deftest is testing]])
-            [clojure.spec.alpha :as s]
+  (:require [clojure.test :refer [deftest is testing]]
+            [clojure.spec.alpha :as spec]
             [me.lomin.sayang :as sg]
             #?(:clj [orchestra.spec.test :as orchestra]
                :cljs [orchestra-cljs.spec.test :as orchestra])))
 
-
-(s/check-asserts true)
+(sg/activate!)
 
 (sg/sdefn basic-usage {:ret    string?
                        :fn #(<= (:x (:args %))
@@ -31,7 +29,7 @@
 
 (orchestra/instrument `basic-usage)
 
-(sg/sdefn int-identity {:args (s/cat :x int?)}
+(sg/sdefn int-identity {:args (spec/cat :x int?)}
           [x]
           x)
 
@@ -69,7 +67,7 @@
 ; Support for destructuring
 
 (sg/sdefn sum-first-two-elements
-          [[[a b] :- (s/tuple int? int? int?)]]
+          [[[a b] :- (spec/tuple int? int? int?)]]
           (+ a b))
 
 (deftest support-for-destructuring-test
@@ -122,7 +120,7 @@
 
 ; Reference other specs
 
-(s/def ::number? number?)
+(spec/def ::number? number?)
 (sg/sdefn number-identity [[x :- ::number?]]
           x)
 
@@ -136,49 +134,48 @@
 
 (orchestra/instrument `number-identity)
 
-(comment
-  (sg/sdefn call-with-7 [[f :- (sg/of make-magic-string)]]
-    (f 7))
+(sg/sdefn call-with-7 [[f :- (sg/of make-magic-string)]]
+  (f 7))
 
-  (deftest of-test
+(deftest of-test
 
-    (is (= "7?" (call-with-7 make-magic-string)))
+  (is (= "7?" (call-with-7 make-magic-string)))
 
-    (testing "'identity' does not fulfill fdef of 'make-magic-string'"
-      (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
-                      :cljs :default)
-                   (call-with-7 identity)))))
+  (testing "'identity' does not fulfill fdef of 'make-magic-string'"
+    (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
+                    :cljs :default)
+                 (call-with-7 identity)))))
 
-  (orchestra/instrument `call-with-7))
+(orchestra/instrument `call-with-7)
 
 ; Data DSL for homogeneous collections
 
-(sg/sdefn speced-add {:ret int?}
-          [[xs :- [int?]]]
+(sg/sdefn speced-add {:ret number?}
+          [[xs :- [number?]]]
           (apply + xs))
 
 (deftest every-spec-data-dsl-test
   (is (= 105 (speced-add (range 15))))
 
-  (testing "1.0 is no integer, therefore xs is no homogeneous collection any more"
+  (testing "a string is not a number, therefore xs is no homogeneous collection any more"
     (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
                     :cljs :default)
-                 (speced-add (cons 1.0 (range 15)))))))
+                 (speced-add (cons "1" (range 15)))))))
 
 (orchestra/instrument `speced-add)
 
 ;Data DSL for tuples
 
-(sg/sdefn sum-of-4-tuple {:ret float?}
-  [[tuple :- [int? float? int? float?]]]
+(sg/sdefn sum-of-pos-pos-neg-tuple {:ret number?}
+  [[tuple :- [pos? pos? neg?]]]
   (apply + tuple))
 
 (deftest tuple-spec-data-dsl-test
-  (is (= 10.0 (sum-of-4-tuple [1 2.0 3 4.0])))
+  (is (= 0 (sum-of-pos-pos-neg-tuple [1 2 -3])))
 
   (testing "Fails tuple spec of :args"
     (is (thrown? #?(:clj  clojure.lang.ExceptionInfo
                     :cljs :default)
-                 (sum-of-4-tuple [1 2 3 4])))))
+                 (sum-of-pos-pos-neg-tuple [1 2 3])))))
 
-(orchestra/instrument `sum-of-4-tuple)
+(orchestra/instrument `sum-of-pos-pos-neg-tuple)
