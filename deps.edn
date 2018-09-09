@@ -1,7 +1,18 @@
-{:deps  {com.bhauman/figwheel-main {:mvn/version "0.1.8"}
-         org.clojure/clojurescript {:mvn/version "1.10.339"}
-         com.rpl/specter {:mvn/version "1.1.1" }
-         org.clojure/test.check {:mvn/version "0.9.0" }
-         org.clojure/clojure {:mvn/version "1.9.0" }
-         orchestra {:mvn/version "2018.08.19-1" }}
- :paths ["src" "target" "resources"]}
+{:aliases
+       {:dev {:extra-paths ["target"]
+              :extra-deps {com.bhauman/figwheel-main #:mvn{:version "0.1.9"},
+                           orchestra #:mvn{:version "2018.08.19-1"},
+                           org.clojure/clojure #:mvn{:version "1.9.0"},
+                           org.clojure/clojurescript #:mvn{:version "1.10.339"},
+                           org.clojure/test.check #:mvn{:version "0.9.0"}},
+              :jvm-opts ["-Dme.lomin.sayang.*activate*=true"]},
+        :runner
+        {:extra-deps
+                    #:com.cognitect{test-runner
+                                    {:git/url
+                                          "https://github.com/cognitect-labs/test-runner",
+                                     :sha "76568540e7f40268ad2b646110f237a60295fa3c"}},
+         :main-opts ["-m" "cognitect.test-runner" "-d" "test"]},
+        :test {:extra-deps #:org.clojure{test.check #:mvn{:version "RELEASE"}},
+               :extra-paths ["test"]}},
+ :deps #:com.rpl{specter #:mvn{:version "1.1.1"}}}

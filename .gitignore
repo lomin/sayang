@@ -12,6 +12,7 @@ pom.xml.asc
 .lein-failures
 .lein-env
 .nrepl-port
+.cpcache
 
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm

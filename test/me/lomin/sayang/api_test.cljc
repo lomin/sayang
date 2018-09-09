@@ -3,6 +3,9 @@
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.spec.alpha :as spec]
             [me.lomin.sayang :as sg]
+            [clojure.test.check.generators]
+            [clojure.test.check.properties]
+            [clojure.test.check]
             #?(:clj [orchestra.spec.test :as orchestra]
                :cljs [orchestra-cljs.spec.test :as orchestra])))
 

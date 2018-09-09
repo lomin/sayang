@@ -1,0 +1,5 @@
+^{:ring-server-options {:port 9501}
+  :watch-dirs ["src" "test"],
+  :auto-testing {:namespaces [me.lomin.sayang.api-test]}
+  :open-url "http://[[server-hostname]]:[[server-port]]/figwheel-extra-main/auto-testing"}
+{:main me.lomin.sayang}
