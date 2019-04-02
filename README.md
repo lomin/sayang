@@ -26,7 +26,7 @@ If you do not like the syntax or any other design decisions of *sayang*, you mig
 * [Ghostwheel](https://github.com/gnl/ghostwheel)
 * [Speck](https://github.com/j-cr/speck)
 * [Provisdom/defn-spec](https://github.com/Provisdom/defn-spec)
-* [danielcompton/defn-spec] (https://github.com/danielcompton/defn-spec)
+* [danielcompton/defn-spec](https://github.com/danielcompton/defn-spec)
 
 ## Getting Started
 
