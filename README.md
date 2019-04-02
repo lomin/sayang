@@ -25,7 +25,8 @@ If you do not like the syntax or any other design decisions of *sayang*, you mig
 * the `defn-spec` macro of [Orchestra](https://github.com/jeaye/orchestra)
 * [Ghostwheel](https://github.com/gnl/ghostwheel)
 * [Speck](https://github.com/j-cr/speck)
-* [defn-spec](https://github.com/Provisdom/defn-spec)
+* [Provisdom/defn-spec](https://github.com/Provisdom/defn-spec)
+* [danielcompton/defn-spec] (https://github.com/danielcompton/defn-spec)
 
 ## Getting Started
 
